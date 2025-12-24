@@ -30,6 +30,8 @@ const Navbar = () => {
             </div>
             <div className={navbarStyles.logoText}>CineVerse</div>
           </div>
+
+          {/* DESKTOP VIEW */}
           <div className={navbarStyles.desktopNav}>
             <div className={navbarStyles.desktopNavItems}>
               {navItems.map((item) => {
@@ -53,6 +55,33 @@ const Navbar = () => {
                     </NavLink>
                     <span className="pill-border"></span>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TABLET VIEW */}
+          <div className={navbarStyles.rightSection}>
+            <div className={navbarStyles.tabletNav}>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.id}
+                    to={item.path}
+                    end
+                    className={({ isActive }) =>
+                      `${navbarStyles.tabletNavLink.base} ${
+                        isActive
+                          ? navbarStyles.tabletNavLink.active
+                          : navbarStyles.tabletNavLink.inactive
+                      }`
+                    }
+                  >
+                    <Icon className={navbarStyles.tabletNavIcon} />
+                    <span>{item.label}</span>
+                    {/*<div className="pill-underline"></div>*/}
+                  </NavLink>
                 );
               })}
             </div>
