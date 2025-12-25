@@ -1,5 +1,4 @@
 import { bannerStyles } from "../assets/dummyStyles";
-import { Link } from "react-router-dom";
 import Video from "../assets/MovieBannerVideo.mp4";
 import { Info, Star, Ticket } from "lucide-react";
 
