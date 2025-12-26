@@ -80,7 +80,7 @@ export const navbarStyles = {
     active: "active text-white",
     inactive: "text-gray-300",
   },
-  desktopNavIcon: "h-8 w-8",
+  desktopNavIcon: "h-6 w-6",
 
   // Right section
   rightSection: "flex items-center gap-4 z-20",
