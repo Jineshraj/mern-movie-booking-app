@@ -1,4 +1,5 @@
 import Banner from "../components/Banner";
+import Footer from "../components/Footer";
 import Movies from "../components/Movies";
 import Navbar from "../components/Navbar";
 import News from "../components/News";
@@ -12,6 +13,7 @@ const Home = () => {
       <Movies></Movies>
       <Trailers></Trailers>
       <News></News>
+      <Footer></Footer>
     </>
   );
 };
