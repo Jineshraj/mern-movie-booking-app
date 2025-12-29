@@ -1,5 +1,5 @@
-import { Image as ImageIcon, Sparkle } from "lucide-react";
-import { newsStyles /*newsCSS*/ } from "../assets/dummyStyles";
+import { Calendar, Clock, Image as ImageIcon, Sparkle } from "lucide-react";
+import { newsCSS, newsStyles } from "../assets/dummyStyles";
 import { sampleNews } from "../assets/newdummydata";
 
 const News = () => {
@@ -11,7 +11,7 @@ const News = () => {
           <div className={newsStyles.logoContainer}>
             <div
               className={newsStyles.logoText}
-              style={{ fontFamily: "'Monoton', cursive" }}
+              style={{ fontFamily: "Monoton, cursive" }}
             >
               CineNews
             </div>
@@ -39,6 +39,147 @@ const News = () => {
           </div>
         </div>
       </header>
+      <main className={newsStyles.main}>
+        <section className={newsStyles.grid}>
+          <article className={newsStyles.heroCard}>
+            <div className={newsStyles.heroImageContainer}>
+              <div className={newsStyles.heroImage}>
+                <img
+                  src={sampleNews[0].image}
+                  alt={sampleNews[0].title}
+                  className={newsStyles.heroImage}
+                  loading="eager"
+                ></img>
+                <div className={newsStyles.heroOverlay}></div>
+                <div className={newsStyles.heroContent}>
+                  <span className={newsStyles.heroCategory}>
+                    {sampleNews[0].category}
+                  </span>
+                  <h1
+                    className={newsStyles.heroTitle}
+                    style={{ fontFamily: "Roboto,sans-serif" }}
+                  >
+                    {sampleNews[0].title}
+                  </h1>
+                  <p className={newsStyles.heroExcerpt}>
+                    {sampleNews[0].excerpt}
+                  </p>
+                  <div className={newsStyles.heroMeta}>
+                    <div className={newsStyles.metaItem}>
+                      <Clock size={16} />
+                      <span className={newsStyles.metaText}>
+                        {sampleNews[0].time}
+                      </span>
+                    </div>
+                    <div className={newsStyles.metaItem}>
+                      <Calendar size={16} />
+                      <span className={newsStyles.metaText}>
+                        {sampleNews[0].date}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={newsStyles.heroStrip}>
+              <div className={newsStyles.stripGrid}>
+                {sampleNews.slice(1, 4).map((item) => (
+                  <article key={item.id} className={newsStyles.articleCard}>
+                    <div className={newsStyles.articleImage}>
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className={newsStyles.articleImage}
+                        loading="lazy"
+                      />
+                      <div className="absolute left-3 bottom-3">
+                        <span className={newsStyles.articleCategory}>
+                          {item.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={newsStyles.articleContent}>
+                      <div>
+                        <h1
+                          className={newsStyles.articleTitle}
+                          style={{ fontFamily: "Roboto , sans-serif" }}
+                        >
+                          {item.title}
+                        </h1>
+                        <p className={newsStyles.articleExcerpt}>
+                          {item.excerpt}
+                        </p>
+                      </div>
+                      <div className={newsStyles.articleSpacer}></div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </article>
+          {/*
+          RIGHT SIDE CODE
+          */}
+
+          {/* Right column: animated card stack */}
+          <aside className={newsStyles.sidebar}>
+            {sampleNews.slice(4, 7).map((item) => (
+              <div key={item.id} className={newsStyles.sidebarCard}>
+                <div className={newsStyles.sidebarCardInner}>
+                  <div className={newsStyles.sidebarImage}>
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className={newsStyles.sidebarImg}
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <div className={newsStyles.sidebarContent}>
+                    <div className="flex items-start gap-2">
+                      <span className={newsStyles.sidebarCategory}>
+                        {item.category}
+                      </span>
+                    </div>
+
+                    <h4
+                      className={newsStyles.sidebarTitle}
+                      style={{ fontFamily: "Roboto, sans-serif" }}
+                    >
+                      {item.title}
+                    </h4>
+                    <p className={newsStyles.sidebarExcerpt}>{item.excerpt}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* CTA / Subscribe card */}
+            <div className={newsStyles.subscribeCard}>
+              <h5
+                className={newsStyles.subscribeTitle}
+                style={{ fontFamily: "Roboto, sans-serif" }}
+              >
+                Join CineNews
+              </h5>
+              <p className={newsStyles.subscribeText}>
+                Get curated cinematic news, exclusive behind-the-scenes, and
+                early access to trailers.
+              </p>
+              <div className={newsStyles.subscribeForm}>
+                <input
+                  className={newsStyles.subscribeInput}
+                  placeholder="Email address"
+                />
+                <button className={newsStyles.subscribeButton}>
+                  Subscribe
+                </button>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+      <style>{newsCSS}</style>
     </div>
   );
 };
