@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Movie from "./pages/Movie";
+import Release from "./pages/Release";
 
 const App = () => {
   return (
@@ -12,6 +13,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/movies" element={<Movie />} />
+        <Route path="/releases" element={<Release />} />
       </Routes>
     </>
   );
