@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { contactStyles } from "../assets/dummyStyles";
 import { ToastContainer } from "react-toastify";
-import { MessageCircle, Popcorn, Send, Ticket } from "lucide-react";
+import {
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Popcorn,
+  Send,
+  Ticket,
+} from "lucide-react";
 
 const ContactsPage = () => {
   const [formData, setFormData] = useState({
@@ -198,6 +206,7 @@ const ContactsPage = () => {
                     name="message"
                     id="message"
                     value={formData.message}
+                    onChange={handleChange}
                     rows={4}
                     className={contactStyles.textarea}
                     placeholder="Please describe your enquiry in detail..."
@@ -219,6 +228,77 @@ const ContactsPage = () => {
                   CINEMA INFO
                 </div>
                 <h2 className={contactStyles.formTitle}>Contact Information</h2>
+                <div className={contactStyles.contactInfo}>
+                  <div className={contactStyles.contactItem}>
+                    <div className={contactStyles.contactIconContainer}>
+                      <Phone className={contactStyles.contactIcon} />
+                    </div>
+                    <div>
+                      <h3 className={contactStyles.contactText}>
+                        Booking Hotline
+                      </h3>
+                      <p className={contactStyles.contactDetail}>
+                        +91 9207611706
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={contactStyles.contactItem}>
+                    <div className={contactStyles.contactIconContainer}>
+                      <Mail className={contactStyles.contactIcon} />
+                    </div>
+                    <div>
+                      <h3 className={contactStyles.contactText}>
+                        Email Address
+                      </h3>
+                      <p className={contactStyles.contactDetail}>
+                        booking@cineplex.com
+                      </p>
+                      <p className={contactStyles.contactDetail}>
+                        support@cineplex.com
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={contactStyles.contactItem}>
+                    <div className={contactStyles.contactIconContainer}>
+                      <MapPin className={contactStyles.contactIcon} />
+                    </div>
+                    <div>
+                      <h3 className={contactStyles.contactText}>
+                        Main Theatre Location
+                      </h3>
+                      <p className={contactStyles.contactDetail}>
+                        123Cinema Street FilCity Mmbai FC400001 , +4 other
+                        locations across the city
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Support Card */}
+
+            <div className={contactStyles.cardRelative}>
+              <div className={contactStyles.emergencyCardGradient}></div>
+              <div className={contactStyles.emergencyCard}>
+                <h3 className={contactStyles.emergencyTitle}>
+                  <Phone className={contactStyles.emergencyIcon} />
+                  Urgent Show-Related Issues
+                </h3>
+                <p className={contactStyles.emergencyText}>
+                  For urgent issues during a movie screening (sound, projection,
+                  etc.)
+                </p>
+                <div className="flex items-center">
+                  <div className={contactStyles.emergencyHotline}>
+                    HOTLINE: +91 9207611706
+                  </div>
+                  <span className={contactStyles.emergencyNote}>
+                    Available during showtimes
+                  </span>
+                </div>
               </div>
             </div>
           </div>
