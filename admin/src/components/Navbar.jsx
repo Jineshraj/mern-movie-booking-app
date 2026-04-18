@@ -1,59 +1,98 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Film, BookOpen, LogOut, Clapperboard } from "lucide-react";
+import {
+  LayoutDashboard,
+  Film,
+  BookOpen,
+  LogOut,
+  Clapperboard,
+} from "lucide-react";
 
 const NAV = [
   { to: "/",          label: "Dashboard", icon: LayoutDashboard },
-  { to: "/inventory", label: "Inventory", icon: Film },
-  { to: "/bookings",  label: "Bookings",  icon: BookOpen },
+  { to: "/inventory", label: "Inventory",  icon: Film },
+  { to: "/bookings",  label: "Bookings",   icon: BookOpen },
 ];
-
-const linkBase =
-  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200";
-const linkActive = "bg-red-600/20 text-red-400 border border-red-600/30";
-const linkIdle   = "text-gray-400 hover:bg-white/5 hover:text-white";
 
 export default function Navbar() {
   const handleLogout = () => {
-    ["admin_token", "admin_email", "admin_auth"].forEach((k) =>
-      localStorage.removeItem(k)
-    );
-    window.location.href = "/";
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_email");
+    window.location.href = "/login";
   };
 
   return (
     <aside
-      className="flex flex-col w-64 min-h-screen py-8 px-4 border-r"
       style={{
-        background: "linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)",
-        borderColor: "rgba(220,38,38,0.15)",
+        width: "220px",
+        minWidth: "220px",
+        background: "linear-gradient(180deg, #0f0f1a 0%, #0a0a12 100%)",
+        borderRight: "1px solid rgba(220,38,38,0.15)",
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        padding: "28px 14px",
+        zIndex: 50,
       }}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 mb-10">
-        <div className="p-2 rounded-xl bg-red-600/20 border border-red-600/30">
-          <Clapperboard size={22} className="text-red-400" />
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "0 6px", marginBottom: "36px" }}>
+        <div style={{
+          background: "rgba(220,38,38,0.15)",
+          border: "1px solid rgba(220,38,38,0.3)",
+          borderRadius: "10px",
+          padding: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <Clapperboard size={20} style={{ color: "#f87171" }} />
         </div>
         <div>
-          <div className="text-white font-bold tracking-wider text-base"
-            style={{ fontFamily: "'Cinzel', serif" }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, color: "#fff", fontSize: "15px", letterSpacing: "0.05em" }}>
             CineVerse
           </div>
-          <div className="text-red-500 text-xs font-semibold">ADMIN PANEL</div>
+          <div style={{
+            fontSize: "10px",
+            fontWeight: 700,
+            letterSpacing: "0.15em",
+            color: "#fff",
+            background: "#dc2626",
+            padding: "1px 6px",
+            borderRadius: "4px",
+            display: "inline-block",
+            marginTop: "2px",
+          }}>
+            ADMIN
+          </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-col gap-2 flex-1">
+      {/* Nav links */}
+      <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
         {NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === "/"}
-            className={({ isActive }) =>
-              `${linkBase} ${isActive ? linkActive : linkIdle}`
-            }
+            style={({ isActive }) => ({
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "10px 12px",
+              borderRadius: "10px",
+              textDecoration: "none",
+              fontSize: "14px",
+              fontWeight: 600,
+              transition: "all 0.18s",
+              background: isActive ? "rgba(220,38,38,0.15)" : "transparent",
+              color: isActive ? "#f87171" : "#9ca3af",
+              border: isActive ? "1px solid rgba(220,38,38,0.25)" : "1px solid transparent",
+            })}
           >
-            <Icon size={18} />
+            <Icon size={17} />
             {label}
           </NavLink>
         ))}
@@ -62,9 +101,25 @@ export default function Navbar() {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-600/10 transition-all mt-4"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          padding: "10px 12px",
+          borderRadius: "10px",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "#9ca3af",
+          width: "100%",
+          transition: "all 0.18s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.background = "rgba(220,38,38,0.08)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "#9ca3af"; e.currentTarget.style.background = "transparent"; }}
       >
-        <LogOut size={18} />
+        <LogOut size={17} />
         Logout
       </button>
     </aside>
