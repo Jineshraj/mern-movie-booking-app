@@ -15,6 +15,7 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
+    const { username, phone, birthDate } = req.body;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "Please add all fields" });
@@ -36,6 +37,9 @@ const registerUser = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
+      username: username || "",
+      phone: phone || "",
+      birthDate: birthDate || null,
       role: req.body.role || "user",
     });
 
