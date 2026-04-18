@@ -10,6 +10,8 @@ import {
   Popcorn,
 } from "lucide-react";
 
+import axios from "axios";
+
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -19,7 +21,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const goBack = () => {
-    window.history.back();
+    window.location.href = "/";
   };
 
   const handleChange = (e) => {
@@ -30,36 +32,29 @@ const LoginPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-
     if (!formData.password || formData.password.length < 6) {
-      setIsLoading(false);
-      toast.error("Password must contain atleast 6 characters");
-      console.warn("login blocked");
+      toast.error("Password must contain at least 6 characters");
       return;
     }
-
-    console.log("Login Data :", formData);
-
-    setTimeout(() => {
+    setIsLoading(true);
+    try {
+      const { data } = await axios.post("http://localhost:5000/api/users/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      localStorage.setItem("cine_auth", JSON.stringify({ isLoggedIn: true, email: data.email, token: data.token }));
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("cine_user_email", data.email || "");
+      localStorage.setItem("cine_token", data.token || "");
+      toast.success("Login successful! Redirecting...");
+      setTimeout(() => { window.location.href = "/"; }, 2000);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Invalid email or password");
+    } finally {
       setIsLoading(false);
-      try {
-        const authObj = { isLoggedIn: true, email: formData.email };
-        localStorage.setItem("cine_auth", JSON.stringify(authObj));
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", formData.email || "");
-        localStorage.setItem("cine_user_email", formData.email || "");
-        console.log("Auth saved to localStorage:", authObj);
-      } catch {
-        console.log("Failed to Login", err);
-      }
-      toast.success("Login Successfull Redirecting to your cinema ...");
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 2000);
-    }, 1500);
+    }
   };
 
   return (
@@ -169,7 +164,7 @@ const LoginPage = () => {
                   <div className={loginStyles.buttonContent}>
                     <Popcorn size={18} className={loginStyles.buttonIcon} />
                     <span className={loginStyles.buttonText}>
-                      ACESS YOR ACCOUNT
+                      ACCESS YOUR ACCOUNT
                     </span>
                   </div>
                 )}

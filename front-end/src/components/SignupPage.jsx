@@ -1,3 +1,4 @@
+import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { signUpStyles, signUpCSS } from "../assets/dummyStyles";
 import {
@@ -46,24 +47,29 @@ const SignupPage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefualt();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!validateForm()) {
       toast.error("Please fix the errors");
       return;
     }
-    console.log(`Form data :`, {
-      ...formData,
-      password: "***" + formData.password.slice(-2),
-    });
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await axios.post("http://localhost:5000/api/users/register", {
+        fullName: formData.fullName,
+        username: formData.username,
+        email: formData.email,
+        phone: formData.phone,
+        birthDate: formData.birthDate,
+        password: formData.password,
+      });
+      toast.success("Account created! Redirecting to Login...");
+      setTimeout(() => { window.location.href = "/login"; }, 2000);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Signup failed. Try again.");
+    } finally {
       setIsLoading(false);
-      toast.success("Account created succesfully ! Redirecting to Login...");
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
-    }, 1500);
+    }
   };
 
   const validateForm = () => {

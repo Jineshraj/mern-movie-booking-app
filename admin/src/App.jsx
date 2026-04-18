@@ -1,19 +1,20 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
-import AddPage from "./pages/AddPage";
-import ListMovie from "./pages/ListMovie";
+import Inventory from "./pages/ListMovie";
+import BookingsAdmin from "./pages/BookingsAdmin";
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex h-screen" style={{ background: "#0a0a0f", color: "#fff" }}>
         <Navbar />
-        <div className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/add-movie" element={<AddPage />} />
-            <Route path="/inventory" element={<ListMovie />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/bookings" element={<BookingsAdmin />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </div>

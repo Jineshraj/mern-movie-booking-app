@@ -1,8 +1,14 @@
 const Booking = require("../models/bookingModel");
 const Movie = require("../models/movieModel");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
 
-// @desc    Create a new booking and stripe checkout session
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// @desc    Create a new booking and Razorpay order
 // @route   POST /api/bookings
 // @access  Private
 const createBooking = async (req, res) => {
@@ -14,7 +20,7 @@ const createBooking = async (req, res) => {
       return res.status(404).json({ message: "Movie not found" });
     }
 
-    // Re-verify Total on Server to perfectly secure against front-end manipulation
+    // Server-side price calculation — cannot be spoofed from frontend
     let amountPaid = 0;
     seats.forEach((seat) => {
       if (seat.startsWith("D") || seat.startsWith("E")) {
@@ -24,24 +30,34 @@ const createBooking = async (req, res) => {
       }
     });
 
-    // Mock Stripe Implementation (For Local Testing without real API keys)
-    const mockedSessionId = `cs_test_${Math.random().toString(36).substring(7)}`;
+    // Create Razorpay order
+    const order = await razorpay.orders.create({
+      amount: Math.round(amountPaid * 100), // paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        movieId: movieId.toString(),
+        seats: seats.join(","),
+      },
+    });
 
-    // Create Booking Document as "Pending" (Since payment hasn't processed)
+    // Create booking as "pending" until payment verified
     const booking = await Booking.create({
       user: req.user._id,
       movie: movieId,
       seats,
       amountPaid,
-      stripeSessionId: mockedSessionId,
+      stripeSessionId: order.id, // reusing field to store Razorpay order ID
       showtimeDate,
       showtimeTime,
       paymentStatus: "pending",
     });
 
-    // We would return the actual Stripe checkout URL here. We return a local verification route instead.
     res.status(201).json({
-      checkoutUrl: `/verify-payment?session_id=${mockedSessionId}`,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
       booking,
     });
   } catch (error) {
@@ -49,38 +65,34 @@ const createBooking = async (req, res) => {
   }
 };
 
-// @desc    Confirm payment web-hook fallback explicitly verifying stripe session
+// @desc    Verify Razorpay payment signature and confirm booking
 // @route   POST /api/bookings/verify
 // @access  Private
 const confirmPayment = async (req, res) => {
   try {
-    const { session_id } = req.body;
-    
-    // In production we hit stripe.checkout.sessions.retrieve(session_id)
-    const booking = await Booking.findOne({ stripeSessionId: session_id });
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    if (!booking) {
-      return res.status(404).json({ message: "Invalid session" });
+    // Verify HMAC-SHA256 signature
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: "Payment verification failed" });
     }
 
-    // Update booking to paid
+    // Find and mark booking as paid
+    const booking = await Booking.findOne({ stripeSessionId: razorpay_order_id });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
     booking.paymentStatus = "paid";
     await booking.save();
 
-    // Loop through the movie showtimes and permanently lock the physical seats into the array
-    const movie = await Movie.findById(booking.movie);
-    const showtimeIndex = movie.showtimes.findIndex(
-      (s) =>
-        s.date.toISOString() === booking.showtimeDate.toISOString() &&
-        s.time === booking.showtimeTime
-    );
-
-    if (showtimeIndex !== -1) {
-      movie.showtimes[showtimeIndex].bookedSeats.push(...booking.seats);
-      await movie.save();
-    }
-
-    res.status(200).json({ message: "Payment verified successfully" });
+    res.status(200).json({ message: "Payment verified successfully", booking });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -91,7 +103,6 @@ const confirmPayment = async (req, res) => {
 // @access  Private
 const getBookings = async (req, res) => {
   try {
-    // We restrict queries directly through `req.user.id` so a hacker cannot read others arrays
     const bookings = await Booking.find({ user: req.user._id })
       .populate("movie", "title posterUrl")
       .sort({ createdAt: -1 });
@@ -102,12 +113,16 @@ const getBookings = async (req, res) => {
   }
 };
 
+// @desc    Get all bookings (admin only)
+// @route   GET /api/bookings/all
+// @access  Private + Admin
 const getAllGlobalBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
       .populate("movie", "title")
       .populate("user", "fullName email")
       .sort({ createdAt: -1 });
+
     res.status(200).json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });

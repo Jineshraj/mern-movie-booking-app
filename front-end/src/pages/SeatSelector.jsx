@@ -3,7 +3,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { ChevronLeft, Sofa, RockingChair, Tag } from "lucide-react";
 import { seatSelectorStyles } from "../assets/dummyStyles";
-import movies from "../assets/dummymdata";
+import axios from "axios";
+import MOVIES_MAIN from "../assets/dummymdata";
+import MOVIES_FEATURED from "../assets/dummymoviedata";
+
+const MOVIES_FEATURED_NORMALISED = MOVIES_FEATURED.map((m) => ({ ...m, image: m.img }));
+const ALL_MOVIES = [...MOVIES_FEATURED_NORMALISED, ...MOVIES_MAIN];
 
 // ── Repo snippet: ROW definition ───────────────────────────────────────────────
 const ROWS = [
@@ -23,7 +28,7 @@ export default function SeatSelector() {
   const slotKey = slot ? decodeURIComponent(slot) : "";
   const navigate = useNavigate();
 
-  const movie = useMemo(() => movies.find((m) => m.id === movieId), [movieId]);
+  const movie = useMemo(() => ALL_MOVIES.find((m) => m.id === movieId), [movieId]);
 
   // Repo snippet: storageKey from movieId + slotKey
   const storageKey = `bookings_${movieId}_${slotKey}`;
@@ -91,12 +96,14 @@ export default function SeatSelector() {
     });
   };
 
-  // Repo snippet: confirmBooking with full localStorage write
-  const confirmBooking = () => {
+  // Razorpay payment flow
+  const confirmBooking = async () => {
     if (selected.size === 0) {
       toast.error("Select at least one seat.");
       return;
     }
+
+    // 1. Persist to localStorage immediately (so Bookings page always works)
     const newBooked = new Set([...booked, ...selected]);
     localStorage.setItem(storageKey, JSON.stringify([...newBooked]));
 
@@ -119,22 +126,83 @@ export default function SeatSelector() {
       bookingId: `B${Date.now()}`,
     };
 
-    // Persist the entire booking record to localStorage for Bookings page
     const existing = JSON.parse(localStorage.getItem("bookmovie_local_booking") || "[]");
     existing.push(bookingDetails);
     localStorage.setItem("bookmovie_local_booking", JSON.stringify(existing));
 
-    console.log("🎬 Booking Confirmed:", bookingDetails);
-
     setBooked(newBooked);
     setSelected(new Set());
 
-    toast.success(
-      <div>
-        <div className="font-bold">Booking Confirmed! 🎉</div>
-        <div className="text-sm">{bookingDetails.totalSeats} seat(s) booked successfully</div>
-      </div>
-    );
+    // 2. Try to create Razorpay order via backend
+    const token = localStorage.getItem("cine_token");
+    if (!token) {
+      // Not logged in — skip payment gateway, just confirm locally
+      toast.success(
+        <div>
+          <div className="font-bold">Booking Confirmed! 🎉</div>
+          <div className="text-sm">{bookingDetails.totalSeats} seat(s) booked</div>
+        </div>
+      );
+      return;
+    }
+
+    try {
+      const { data } = await axios.post(
+        "http://localhost:5000/api/bookings",
+        {
+          movieId: movie.id,
+          seats: [...selected],
+          showtimeDate: new Date(slotKey),
+          showtimeTime: new Date(slotKey).toLocaleTimeString("en-IN"),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 3. Open Razorpay checkout modal
+      const options = {
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        name: "CineVerse",
+        description: `Booking for ${movie.title}`,
+        order_id: data.orderId,
+        handler: async function (response) {
+          try {
+            await axios.post(
+              "http://localhost:5000/api/bookings/verify",
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success("🎉 Payment Successful! Booking Confirmed!");
+            setTimeout(() => navigate("/bookings"), 2000);
+          } catch {
+            toast.error("Payment verification failed. Contact support.");
+          }
+        },
+        prefill: {
+          email: localStorage.getItem("cine_user_email") || "",
+        },
+        theme: { color: "#dc2626" },
+        modal: {
+          ondismiss: () => toast.info("Payment cancelled."),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch {
+      // Backend unreachable — still show local success
+      toast.success(
+        <div>
+          <div className="font-bold">Booking Confirmed! 🎉</div>
+          <div className="text-sm">{bookingDetails.totalSeats} seat(s) booked</div>
+        </div>
+      );
+    }
   };
 
   // Pricing total
