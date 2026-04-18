@@ -71,6 +71,7 @@ const loginUser = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        isAdmin: user.role === "admin",
         token: generateToken(user._id),
       });
     } else {
