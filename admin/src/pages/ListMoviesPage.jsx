@@ -333,6 +333,8 @@ function Card({ item, onOpen, onDelete }) {
   };
 
   let posterOrThumb =
+    item.posterUrl ||
+    item.bgUrl ||
     item.poster ||
     item.thumbnail ||
     item.image ||

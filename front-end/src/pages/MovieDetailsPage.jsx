@@ -158,7 +158,12 @@ export default function MovieDetailsPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openTrailer = (movieObj) => {
-    const ytId = extractYouTubeId(movieObj?.trailer || "");
+    const ytId = extractYouTubeId(
+      movieObj?.trailerUrl || 
+      movieObj?.trailer || 
+      movieObj?.latestTrailer?.videoId || 
+      ""
+    );
     if (!ytId) {
       toast.info("Trailer not available for this movie.");
       return;
