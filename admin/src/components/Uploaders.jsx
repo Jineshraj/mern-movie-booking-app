@@ -18,7 +18,7 @@ export const namedUploaderStyles = {
   uploadInput: "hidden",
 };
 
-export function NamedUploader({ title, onFiles, items, remove, updateName, updateRole, icon }) {
+export function NamedUploader({ title, onFiles, items, remove, updateName, updateRole, icon, onAddEmpty, onUpdateImage }) {
   return (
     <div className={namedUploaderStyles.container}>
       <h3 className={namedUploaderStyles.title}>{title}</h3>
@@ -28,9 +28,12 @@ export function NamedUploader({ title, onFiles, items, remove, updateName, updat
             {it.preview ? (
               <img src={it.preview} className={namedUploaderStyles.preview} alt="preview" />
             ) : (
-              <div className={namedUploaderStyles.placeholder}>
+              <label className={`${namedUploaderStyles.placeholder} cursor-pointer hover:border-red-500/50 transition-colors`}>
                 {icon ? icon : <div className={namedUploaderStyles.placeholderIcon}>?</div>}
-              </div>
+                {onUpdateImage && (
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => onUpdateImage(i, e.target.files[0])} />
+                )}
+              </label>
             )}
             <div className={namedUploaderStyles.inputContainer}>
               <input
@@ -59,15 +62,21 @@ export function NamedUploader({ title, onFiles, items, remove, updateName, updat
         ))}
         <label className={namedUploaderStyles.uploadLabel}>
           {icon}
-          <span className={namedUploaderStyles.uploadText}>Add Image</span>
+          <span className={namedUploaderStyles.uploadText}>Upload Files</span>
           <input type="file" multiple accept="image/*" onChange={onFiles} className={namedUploaderStyles.uploadInput} />
         </label>
+        {onAddEmpty && (
+          <button type="button" onClick={onAddEmpty} className={namedUploaderStyles.uploadLabel}>
+            <span className={namedUploaderStyles.placeholderIcon}>+</span>
+            <span className={namedUploaderStyles.uploadText}>Add Person</span>
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-export function Uploader({ title, onFiles, items, remove, updateMeta, icon }) {
+export function Uploader({ title, onFiles, items, remove, updateMeta, icon, onAddEmpty, onUpdateImage }) {
   return (
     <div className={namedUploaderStyles.container}>
       <h3 className={namedUploaderStyles.title}>{title}</h3>
@@ -77,9 +86,12 @@ export function Uploader({ title, onFiles, items, remove, updateMeta, icon }) {
             {it.preview ? (
               <img src={it.preview} className={namedUploaderStyles.preview} alt="preview" />
             ) : (
-              <div className={namedUploaderStyles.placeholder}>
+              <label className={`${namedUploaderStyles.placeholder} cursor-pointer hover:border-red-500/50 transition-colors title="Click to add image"`}>
                 {icon ? icon : <div className={namedUploaderStyles.placeholderIcon}>?</div>}
-              </div>
+                {onUpdateImage && (
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => onUpdateImage(i, e.target.files[0])} />
+                )}
+              </label>
             )}
             <div className={namedUploaderStyles.inputContainer}>
               {it.role !== undefined ? (
@@ -117,9 +129,15 @@ export function Uploader({ title, onFiles, items, remove, updateMeta, icon }) {
         ))}
         <label className={namedUploaderStyles.uploadLabel}>
           {icon}
-          <span className={namedUploaderStyles.uploadText}>Add Image</span>
+          <span className={namedUploaderStyles.uploadText}>Upload Files</span>
           <input type="file" multiple accept="image/*" onChange={onFiles} className={namedUploaderStyles.uploadInput} />
         </label>
+        {onAddEmpty && (
+          <button type="button" onClick={onAddEmpty} className={namedUploaderStyles.uploadLabel}>
+            <span className={namedUploaderStyles.placeholderIcon}>+</span>
+            <span className={namedUploaderStyles.uploadText}>Add Person</span>
+          </button>
+        )}
       </div>
     </div>
   );

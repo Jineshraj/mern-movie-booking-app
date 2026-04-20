@@ -46,6 +46,14 @@ const addMoviePageStyles = {
   submitButton: "w-full py-4 mt-8 bg-red-600 hover:bg-red-700 text-white rounded-xl text-lg font-bold shadow-lg shadow-red-600/30 transition-all disabled:opacity-50",
   subSection: "border-t border-white/5 pt-6 mt-6",
   subSectionTitle: "text-lg text-white font-bold mb-4",
+  slotsHeader: "flex items-center justify-between mb-4 pb-2 border-b border-white/10",
+  sectionTitle: "text-lg text-white font-bold uppercase tracking-wider",
+  addSlotButton: "flex items-center gap-2 px-4 py-2 bg-red-600/20 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition-colors text-sm font-bold",
+  addSlotIcon: "w-4 h-4",
+  slotItem: "bg-[#161616] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row items-center gap-4 transition-colors hover:border-white/20",
+  slotGrid: "grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 w-full",
+  slotInput: "w-full bg-[#111] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-red-500",
+  slotRemoveButton: "p-2.5 bg-red-600/10 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition-colors",
 };
 
 
@@ -151,6 +159,25 @@ export default function AddMoviePage() {
     if (!e.target.files) return;
     readFilesToPreviewsWithMeta(e.target.files, setter, metaType);
     e.target.value = null;
+  };
+
+  const addEmptyPerson = (setter, metaType = null) => {
+    let obj = { file: null, preview: null };
+    if (metaType === "nameRole") {
+      obj.name = ""; obj.role = "";
+    } else if (metaType === "name") {
+      obj.name = "";
+    }
+    setter(prev => [...prev, obj]);
+  };
+
+  const updateSinglePersonImage = (idx, file, setter) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = (ev) => {
+      setter(prev => prev.map((it, i) => i === idx ? { ...it, file, preview: ev.target.result } : it));
+    };
+    r.readAsDataURL(file);
   };
 
   const readFilesToNamedPreviews = (files, setter) => {
@@ -978,6 +1005,8 @@ export default function AddMoviePage() {
                     onFiles={(e) =>
                       handleMultipleFiles(e, setCastImages, "nameRole")
                     }
+                    onAddEmpty={() => addEmptyPerson(setCastImages, "nameRole")}
+                    onUpdateImage={(i, f) => updateSinglePersonImage(i, f, setCastImages)}
                     items={castImages}
                     remove={(i) => removePreview(i, setCastImages)}
                     updateMeta={(i, field, v) =>
@@ -990,6 +1019,8 @@ export default function AddMoviePage() {
                     onFiles={(e) =>
                       handleMultipleFiles(e, setDirectorImages, "name")
                     }
+                    onAddEmpty={() => addEmptyPerson(setDirectorImages, "name")}
+                    onUpdateImage={(i, f) => updateSinglePersonImage(i, f, setDirectorImages)}
                     items={directorImages}
                     remove={(i) => removePreview(i, setDirectorImages)}
                     updateMeta={(i, field, v) =>
@@ -1002,6 +1033,8 @@ export default function AddMoviePage() {
                     onFiles={(e) =>
                       handleMultipleFiles(e, setProducerImages, "name")
                     }
+                    onAddEmpty={() => addEmptyPerson(setProducerImages, "name")}
+                    onUpdateImage={(i, f) => updateSinglePersonImage(i, f, setProducerImages)}
                     items={producerImages}
                     remove={(i) => removePreview(i, setProducerImages)}
                     updateMeta={(i, field, v) =>
