@@ -14,15 +14,16 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
-    const { username, phone, birthDate } = req.body;
+    const { fullName, email, password, username, phone, birthDate } = req.body;
 
     if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "Please add all fields" });
+      return res.status(400).json({ message: "Please add all required fields" });
     }
 
+    const normalizedEmail = email.toLowerCase();
+
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -35,12 +36,12 @@ const registerUser = async (req, res) => {
     // Create user
     const user = await User.create({
       fullName,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       username: username || "",
       phone: phone || "",
       birthDate: birthDate || null,
-      role: req.body.role || "user",
+      role: "user", // SECURITY: Force user role, ignore req.body.role
     });
 
     if (user) {
@@ -65,10 +66,15 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Check for user email
-    const user = await User.findOne({ email });
-
+    
+    // 1. Prevent server crashes on missing fields
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+    // 2. Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase();
+    // 3. Search using normalized email
+    const user = await User.findOne({ email: normalizedEmail });
     if (user && (await bcrypt.compare(password, user.password))) {
       res.json({
         _id: user.id,

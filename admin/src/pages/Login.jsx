@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { Clapperboard, Eye, EyeOff, Lock, Mail } from "lucide-react";
-import axios from "axios";
+import api from "../utils/api";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export default function AdminLogin() {
     }
     setLoading(true);
     try {
-      const { data } = await axios.post("http://localhost:5000/api/users/login", {
+      const { data } = await api.post("/users/login", {
         email: form.email,
         password: form.password,
       });
@@ -33,7 +33,8 @@ export default function AdminLogin() {
       toast.success("Welcome back, Admin!");
       setTimeout(() => navigate("/"), 1200);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Invalid credentials.");
+      const msg = err?.response?.data?.message || err.message || "Invalid credentials.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

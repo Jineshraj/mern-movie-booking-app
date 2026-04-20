@@ -83,7 +83,7 @@ export default function BookingsAdmin() {
                       {b._id.slice(-8)}
                     </td>
                     <td className="px-5 py-3 font-semibold text-white">
-                      {b.movie?.title ?? "—"}
+                      {b.movieTitle ?? "—"}
                     </td>
                     <td className="px-5 py-3 text-gray-400">
                       {b.user?.email ?? b.user?.fullName ?? "—"}

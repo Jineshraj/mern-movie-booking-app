@@ -13,41 +13,29 @@ const razorpay = new Razorpay({
 // @access  Private
 const createBooking = async (req, res) => {
   try {
-    const { movieId, seats, showtimeDate, showtimeTime } = req.body;
-
-    const movie = await Movie.findById(movieId);
-    if (!movie) {
-      return res.status(404).json({ message: "Movie not found" });
-    }
-
-    // Server-side price calculation — cannot be spoofed from frontend
+    const { movieId, movieTitle, moviePoster, basePrice, seats, showtimeDate, showtimeTime } = req.body;
     let amountPaid = 0;
     seats.forEach((seat) => {
       if (seat.startsWith("D") || seat.startsWith("E")) {
-        amountPaid += movie.basePrice * 1.5;
+        amountPaid += basePrice * 1.5;
       } else {
-        amountPaid += movie.basePrice;
+        amountPaid += basePrice;
       }
     });
-
-    // Create Razorpay order
     const order = await razorpay.orders.create({
-      amount: Math.round(amountPaid * 100), // paise
+      amount: Math.round(amountPaid * 100),
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
-      notes: {
-        movieId: movieId.toString(),
-        seats: seats.join(","),
-      },
+      notes: { movieId: movieId.toString(), seats: seats.join(",") },
     });
-
-    // Create booking as "pending" until payment verified
     const booking = await Booking.create({
       user: req.user._id,
-      movie: movieId,
+      movieId: movieId.toString(),
+      movieTitle,
+      moviePoster,
       seats,
       amountPaid,
-      stripeSessionId: order.id, // reusing field to store Razorpay order ID
+      stripeSessionId: order.id,
       showtimeDate,
       showtimeTime,
       paymentStatus: "pending",
@@ -104,7 +92,6 @@ const confirmPayment = async (req, res) => {
 const getBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user._id })
-      .populate("movie", "title posterUrl")
       .sort({ createdAt: -1 });
 
     res.status(200).json(bookings);
@@ -119,7 +106,6 @@ const getBookings = async (req, res) => {
 const getAllGlobalBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
-      .populate("movie", "title")
       .populate("user", "fullName email")
       .sort({ createdAt: -1 });
 

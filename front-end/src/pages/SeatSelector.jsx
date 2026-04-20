@@ -151,6 +151,9 @@ export default function SeatSelector() {
         "http://localhost:5000/api/bookings",
         {
           movieId: movie.id,
+          movieTitle: movie.title,
+          moviePoster: movie.image || movie.img,
+          basePrice: movie.price || 250,
           seats: [...selected],
           showtimeDate: new Date(slotKey),
           showtimeTime: new Date(slotKey).toLocaleTimeString("en-IN"),

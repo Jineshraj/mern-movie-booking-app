@@ -45,64 +45,27 @@ const getMovieById = async (req, res) => {
 // @access  Private/Admin
 const createMovie = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      duration,
-      releaseDate,
-      language,
-      category,
-      trailerUrl,
-      basePrice,
-    } = req.body;
-
-    // Handle poster
-    let posterUrl = "";
-    if (req.files && req.files.poster && req.files.poster.length > 0) {
-      posterUrl = req.files.poster[0].path;
-    }
-
-    // Handle parsed Cast Array since it comes as stringified JSON in formData
-    let cast = [];
-    if (req.body.cast) {
-      cast = JSON.parse(req.body.cast);
-      // Map cast avatars
-      if (req.files && req.files.castAvatars) {
-        cast = cast.map((actor, index) => {
-          return {
-            ...actor,
-            avatarUrl: req.files.castAvatars[index]
-              ? req.files.castAvatars[index].path
-              : "",
-          };
-        });
-      }
-    }
-
-    // Handle Showtimes
-    let showtimes = [];
-    if (req.body.showtimes) {
-      showtimes = JSON.parse(req.body.showtimes);
-    }
-
+    const b = req.body;
+    let posterUrl = req.files?.poster ? req.files.poster[0].path : "";
+    const categories = b.categories ? JSON.parse(b.categories) : [];
+    const slots = b.slots ? JSON.parse(b.slots) : [];
+    const seatPrices = b.seatPrices ? JSON.parse(b.seatPrices) : { standard: 0, recliner: 0 };
+    
+    // Map actors, directors, producers w/ Avatar files
+    let cast = b.cast ? JSON.parse(b.cast) : [];
+    if (req.files?.castFiles) cast = cast.map((c, i) => ({ ...c, avatarUrl: req.files.castFiles[i]?.path || "" }));
+    let directors = b.directors ? JSON.parse(b.directors) : [];
+    if (req.files?.directorFiles) directors = directors.map((c, i) => ({ ...c, avatarUrl: req.files.directorFiles[i]?.path || "" }));
+    let producers = b.producers ? JSON.parse(b.producers) : [];
+    if (req.files?.producerFiles) producers = producers.map((c, i) => ({ ...c, avatarUrl: req.files.producerFiles[i]?.path || "" }));
     const movie = await Movie.create({
-      title,
-      description,
-      duration,
-      releaseDate,
-      language,
-      category,
-      posterUrl,
-      trailerUrl,
-      basePrice,
-      cast,
-      showtimes,
+      title: b.movieName, type: b.type || "normal", description: b.story || "", duration: Number(b.duration) || 0,
+      category: categories, posterUrl, trailerUrl: b.trailerUrl || "", videoUrl: b.videoUrl || "",
+      rating: Number(b.rating) || 7.5, seatPrices, auditorium: b.auditorium || "Audi 1",
+      cast, directors, producers, showtimes: slots, latestTrailer: b.latestTrailer ? JSON.parse(b.latestTrailer) : {}
     });
-
     res.status(201).json(movie);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 // @desc    Delete a movie

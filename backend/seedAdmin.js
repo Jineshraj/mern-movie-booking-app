@@ -13,10 +13,13 @@ async function seedAdmin() {
   const existing = await User.findOne({ email });
 
   if (existing) {
-    // Ensure role is admin
+    // Ensure role is admin AND update password to be sure
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash("Admin@1234", salt);
     existing.role = "admin";
+    existing.password = hashed;
     await existing.save();
-    console.log("✅ Existing user updated to admin:", email);
+    console.log("✅ Existing user updated to admin and password reset:", email);
   } else {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash("Admin@1234", salt);

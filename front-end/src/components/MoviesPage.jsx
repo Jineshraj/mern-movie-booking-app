@@ -1,20 +1,50 @@
 import { useEffect, useState } from "react";
+import api, { getApiBaseUrl } from "../utils/api";
 import { moviesPageStyles } from "../assets/dummyStyles";
-import MOVIES from "../assets/dummymdata";
 import { Link } from "react-router-dom";
 
 const MoviesPage = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [showAll, setShowAll] = useState(false);
+  
+  const [movies, setMovies] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchAndMergeMovies = async () => {
+      try {
+        const { data } = await api.get('/movies');
+        
+        // Filter OUT featured layout items, mapping exclusively remaining components
+        const normalMovies = data.filter(m => m.type !== "featured" && m.title !== "Fighter");
 
-  const movies = MOVIES;
-
+        const formattedLiveMovies = normalMovies.map(m => ({
+          id: m._id, 
+          title: m.title,
+          category: (m.category && m.category[0]) ? m.category[0].toLowerCase() : "action", 
+          price: m.seatPrices?.standard || 250,
+          image: `${getApiBaseUrl()}/${m.posterUrl}`,
+          img: `${getApiBaseUrl()}/${m.posterUrl}`,
+          description: m.description,
+          time: (m.showtimes || []).map(s => s.time) || ["2:30 PM", "7:00 PM"]
+        }));
+        
+        setMovies(formattedLiveMovies);
+      } catch (err) {
+        console.error("Failed to load live movies", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAndMergeMovies();
+  }, []);
   const filteredMovies =
     activeCategory === "all"
       ? movies
       : movies.filter((movie) => movie.category === activeCategory);
+      
   const COLLAPSE_COUNT = 12;
-
   useEffect(() => {
     setShowAll(false);
   }, [activeCategory]);

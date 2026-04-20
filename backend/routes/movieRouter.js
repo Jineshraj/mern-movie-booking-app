@@ -26,7 +26,13 @@ router.route("/").get(getMovies).post(
   adminProtect,
   upload.fields([
     { name: "poster", maxCount: 1 },
-    { name: "castAvatars", maxCount: 10 },
+    { name: "ltThumbnail", maxCount: 1 },
+    { name: "castFiles", maxCount: 10 },
+    { name: "directorFiles", maxCount: 5 },
+    { name: "producerFiles", maxCount: 5 },
+    { name: "ltDirectorFiles", maxCount: 5 },
+    { name: "ltProducerFiles", maxCount: 5 },
+    { name: "ltSingerFiles", maxCount: 5 }
   ]),
   createMovie
 );

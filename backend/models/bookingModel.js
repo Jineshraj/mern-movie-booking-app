@@ -7,11 +7,9 @@ const bookingSchema = mongoose.Schema(
       required: true,
       ref: "User",
     },
-    movie: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Movie",
-    },
+    movieTitle: { type: String, required: true },
+    moviePoster: { type: String, required: true },
+    movieId: { type: String, required: true }, // Store dummy integer as string
     seats: [{ type: String, required: true }],
     amountPaid: { type: Number, required: true },
     stripeSessionId: { type: String },

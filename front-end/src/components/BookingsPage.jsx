@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { QRCodeSVG } from "qrcode.react";
 import {
   bookingsPageStyles,
@@ -27,28 +28,40 @@ const BookingsPage = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [qrModal, setQrModal] = useState(null); // holds booking object for modal
 
-  // Read from localStorage key set by SeatSelector confirmBooking
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("bookmovie_local_booking");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        // Newest bookings first
-        setBookings(Array.isArray(parsed) ? parsed.reverse() : []);
-      } else {
-        setBookings([]);
+    const fetchBookings = async () => {
+      try {
+        const token = localStorage.getItem("cine_token");
+        if (!token) return;
+        
+        const { data } = await axios.get("http://localhost:5000/api/bookings/mybookings", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // The backend sends them sorted, just format to match UI expected keys
+        const formattedBookings = data.map(b => ({
+          bookingId: b._id.slice(-8).toUpperCase(),
+          movie: b.movieTitle || "Unknown Movie",
+          poster: b.moviePoster || "",
+          showtime: new Date(b.createdAt), // Use creation time for simple display
+          audi: "Audi 1",
+          totalSeats: b.seats?.length || 0,
+          totalAmount: b.amountPaid || 0,
+          bookedSeats: b.seats || [],
+          bookingTime: b.createdAt
+        }));
+        
+        setBookings(formattedBookings);
+      } catch (error) {
+        console.error("Failed to fetch bookings:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setBookings([]);
-    }
-    setLoading(false);
+    };
+    fetchBookings();
   }, []);
 
-  // Look up poster from dummymdata by movieId
-  const getPoster = (movieId) => {
-    const found = movies.find((m) => m.id === Number(movieId));
-    return found?.image || null;
-  };
+
 
   const toggleExpand = (bookingId) =>
     setExpandedId((prev) => (prev === bookingId ? null : bookingId));
@@ -84,7 +97,7 @@ const BookingsPage = () => {
             </div>
           ) : (
             bookings.map((booking) => {
-              const poster = getPoster(booking.movieId);
+              const poster = booking.poster;
               const isExpanded = expandedId === booking.bookingId;
               const qrValue = JSON.stringify({
                 bookingId: booking.bookingId,

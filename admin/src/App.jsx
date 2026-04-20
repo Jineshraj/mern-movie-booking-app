@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/ListMovie";
-import BookingsAdmin from "./pages/BookingsAdmin";
+import ListMoviesPage from "./pages/ListMoviesPage";
+import AddPage from "./pages/AddPage";
+import Bookings from "./pages/Bookings";
 import AdminLogin from "./pages/Login";
 
 // Auth guard — redirects to /login if no admin_token in localStorage
@@ -14,25 +15,24 @@ function RequireAdmin({ children }) {
 
 function AdminLayout() {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#09090f", color: "#fff" }}>
-      {/* Fixed 220px left sidebar */}
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#09090f", color: "#fff" }}>
+      {/* Top Navbar */}
       <Navbar />
 
-      {/* Main content — offset by sidebar width */}
+      {/* Main content */}
       <main
         style={{
-          marginLeft: "220px",
           flex: 1,
           overflowX: "hidden",
           overflowY: "auto",
           padding: "32px 28px",
-          minHeight: "100vh",
         }}
       >
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/bookings" element={<BookingsAdmin />} />
+          <Route path="/list" element={<ListMoviesPage />} />
+          <Route path="/add" element={<AddPage />} />
+          <Route path="/bookings" element={<Bookings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

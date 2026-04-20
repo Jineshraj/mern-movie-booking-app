@@ -1,127 +1,70 @@
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Film,
-  BookOpen,
-  LogOut,
-  Clapperboard,
-} from "lucide-react";
+import { Film, List, Calendar, Ticket, Menu } from "lucide-react";
 
-const NAV = [
-  { to: "/",          label: "Dashboard", icon: LayoutDashboard },
-  { to: "/inventory", label: "Inventory",  icon: Film },
-  { to: "/bookings",  label: "Bookings",   icon: BookOpen },
-];
+export default function Navbar({ open, close }) {
+  const [isOpen, setIsOpen] = useState(false);
 
-export default function Navbar() {
-  const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_email");
-    window.location.href = "/login";
-  };
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    const onKey = (e) => {
+      if (e.key === "Escape" && close) close();
+    };
+    
+    // Auto-cleanup stale dropdown renders returning upwards towards Desktop
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsOpen(false);
+      }
+    };
+    
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+      document.body.style.overflow = "";
+    };
+  }, [open, close]);
+
+  const NavItem = ({ to, Icon, label, end = false, onClick }) => (
+    <NavLink to={to} end={end} onClick={onClick} className={({ isActive }) =>
+      `flex items-center gap-2 text-sm font-bold tracking-wide transition-colors ${isActive ? "text-red-500" : "text-gray-400 hover:text-white"}`
+    }>
+      {({ isActive }) => (
+        <>
+          <Icon className={`w-5 h-5 ${isActive ? "text-red-500" : "text-gray-500"}`} />
+          <span>{label}</span>
+        </>
+      )}
+    </NavLink>
+  );
 
   return (
-    <aside
-      style={{
-        width: "220px",
-        minWidth: "220px",
-        background: "linear-gradient(180deg, #0f0f1a 0%, #0a0a12 100%)",
-        borderRight: "1px solid rgba(220,38,38,0.15)",
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        padding: "28px 14px",
-        zIndex: 50,
-      }}
-    >
-      {/* Brand */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "0 6px", marginBottom: "36px" }}>
-        <div style={{
-          background: "rgba(220,38,38,0.15)",
-          border: "1px solid rgba(220,38,38,0.3)",
-          borderRadius: "10px",
-          padding: "8px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <Clapperboard size={20} style={{ color: "#f87171" }} />
+    <nav className="w-full bg-black/90 p-4 border-b border-white/10 relative z-50">
+      <div className="flex justify-between items-center">
+        <div className="text-red-600 font-bold text-xl tracking-widest font-cinzel">ADMIN PANEL</div>
+        {/* Desktop Links */}
+        <div className="hidden md:flex gap-6 items-center">
+           <NavItem to="/add" Icon={Film} label="ADD MOVIES" />
+           <NavItem to="/list" Icon={List} label="LIST MOVIES" />
+           <NavItem to="/" Icon={Calendar} label="DASHBOARD" end />
+           <NavItem to="/bookings" Icon={Ticket} label="BOOKINGS" />
         </div>
-        <div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, color: "#fff", fontSize: "15px", letterSpacing: "0.05em" }}>
-            CineVerse
-          </div>
-          <div style={{
-            fontSize: "10px",
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            color: "#fff",
-            background: "#dc2626",
-            padding: "1px 6px",
-            borderRadius: "4px",
-            display: "inline-block",
-            marginTop: "2px",
-          }}>
-            ADMIN
-          </div>
-        </div>
+        {/* Mobile Toggle */}
+        <button className="md:hidden text-white hover:text-red-500 transition-colors" onClick={() => setIsOpen(!isOpen)}>
+          <Menu size={28} />
+        </button>
       </div>
-
-      {/* Nav links */}
-      <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-        {NAV.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            style={({ isActive }) => ({
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "10px 12px",
-              borderRadius: "10px",
-              textDecoration: "none",
-              fontSize: "14px",
-              fontWeight: 600,
-              transition: "all 0.18s",
-              background: isActive ? "rgba(220,38,38,0.15)" : "transparent",
-              color: isActive ? "#f87171" : "#9ca3af",
-              border: isActive ? "1px solid rgba(220,38,38,0.25)" : "1px solid transparent",
-            })}
-          >
-            <Icon size={17} />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "10px 12px",
-          borderRadius: "10px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: 600,
-          color: "#9ca3af",
-          width: "100%",
-          transition: "all 0.18s",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.background = "rgba(220,38,38,0.08)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#9ca3af"; e.currentTarget.style.background = "transparent"; }}
-      >
-        <LogOut size={17} />
-        Logout
-      </button>
-    </aside>
+      {/* Mobile Dropdown */}
+      {isOpen && (
+        <div className="md:hidden flex flex-col gap-4 mt-4 bg-[#111] p-4 rounded-xl border border-white/10 absolute left-4 right-4 shadow-xl">
+           <NavItem to="/add" Icon={Film} label="ADD MOVIES" onClick={() => setIsOpen(false)} />
+           <NavItem to="/list" Icon={List} label="LIST MOVIES" onClick={() => setIsOpen(false)} />
+           <NavItem to="/" Icon={Calendar} label="DASHBOARD" onClick={() => setIsOpen(false)} end />
+           <NavItem to="/bookings" Icon={Ticket} label="BOOKINGS" onClick={() => setIsOpen(false)} />
+        </div>
+      )}
+    </nav>
   );
 }

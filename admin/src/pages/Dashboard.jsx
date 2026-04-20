@@ -1,144 +1,171 @@
-import { useEffect, useState } from "react";
-import { Film, BookOpen, DollarSign, Users } from "lucide-react";
-import axios from "axios";
+import React, { useState, useEffect, useMemo } from "react";
+import api from "../utils/api";
+import { normalizeBookingData } from "../utils/dataAdapters";
+import { Film, Users, BookOpen, IndianRupee, AlertTriangle } from "lucide-react";
 
-const AUTH = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
-});
-
-const card = {
-  wrapper:
-    "rounded-2xl p-6 border flex items-center gap-5 transition-all hover:scale-[1.02]",
-  icon: "p-3 rounded-xl",
-  label: "text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1",
-  value: "text-3xl font-bold text-white",
-};
-
-const STATS = [
-  {
-    key: "movies",
-    label: "Total Movies",
-    icon: Film,
-    color: "#dc2626",
-    bg: "rgba(220,38,38,0.12)",
-    border: "rgba(220,38,38,0.25)",
-  },
-  {
-    key: "bookings",
-    label: "Total Bookings",
-    icon: BookOpen,
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.12)",
-    border: "rgba(245,158,11,0.25)",
-  },
-  {
-    key: "revenue",
-    label: "Total Revenue",
-    icon: DollarSign,
-    color: "#10b981",
-    bg: "rgba(16,185,129,0.12)",
-    border: "rgba(16,185,129,0.25)",
-  },
-  {
-    key: "users",
-    label: "Total Users",
-    icon: Users,
-    color: "#8b5cf6",
-    bg: "rgba(139,92,246,0.12)",
-    border: "rgba(139,92,246,0.25)",
-  },
-];
+const fmtINR = (num) => typeof num === "number" ? `₹${num.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "₹0";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    movies: "—",
-    bookings: "—",
-    revenue: "—",
-    users: "—",
-  });
+  const [movies, setMovies] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    let cancelled = false;
+
+    async function fetchAll() {
       try {
-        const [moviesRes, bookingsRes] = await Promise.allSettled([
-          axios.get("http://localhost:5000/api/movies"),
-          axios.get("http://localhost:5000/api/bookings/all", AUTH()),
+        const [mRes, bRes, uRes] = await Promise.allSettled([
+          api.get("/movies"),
+          // TODO: TECH DEBT - Create a backend specific endpoint '/api/dashboard/stats' to aggregate 
+          // total revenue, users, and movies so the frontend doesn't download the entire database.
+          api.get("/bookings/all"),
+          api.get("/users")
         ]);
 
-        const movies =
-          moviesRes.status === "fulfilled" ? moviesRes.value.data : [];
-        const bookings =
-          bookingsRes.status === "fulfilled" ? bookingsRes.value.data : [];
+        if (!cancelled && (mRes.status === "rejected" || bRes.status === "rejected" || uRes.status === "rejected")) {
+           setError("Warning: Some API streams failed or crashed. Data may be incomplete.");
+        }
 
-        const revenue = bookings.reduce(
-          (sum, b) => sum + (b.amountPaid || 0),
-          0
-        );
-        const users = new Set(bookings.map((b) => b.user?._id || b.user)).size;
+        const normaliseArrayResponse = (r) => {
+          if (!r || r.status === "rejected") return [];
+          const data = r.value?.data;
+          if (!data) return [];
+          if (Array.isArray(data)) return data;
+          if (Array.isArray(data.items)) return data.items;
+          return [];
+        };
 
-        setStats({
-          movies: movies.length,
-          bookings: bookings.length,
-          revenue: `₹${revenue.toLocaleString("en-IN")}`,
-          users,
-        });
-      } catch {
-        /* silent */
-      } finally {
-        setLoading(false);
+        const rawMovies = normaliseArrayResponse(mRes);
+        const rawBookings = normaliseArrayResponse(bRes);
+        const rawUsers = normaliseArrayResponse(uRes);
+
+        const normMovies = rawMovies.map((m) => ({
+          id: m._id || m.id || "",
+          title: m.title || "Untitled",
+          basePrice: Number(m.basePrice || 0) || 0,
+        }));
+
+        const normBookings = rawBookings.map(b => normalizeBookingData(b)).filter(Boolean);
+        const paidBookings = normBookings;
+
+        const normUsers = rawUsers.map((u) => ({
+          id: u._id || "",
+          name: u.name || "",
+        }));
+
+        if (!cancelled) {
+          setMovies(normMovies);
+          setBookings(paidBookings);
+          setUsers(normUsers);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("dashboard fetch error:", err);
+          setError("A critical error occurred while building the dashboard.");
+          setLoading(false);
+        }
       }
-    };
-    fetchStats();
+    }
+    fetchAll();
+    return () => { cancelled = true; };
   }, []);
 
-  return (
-    <div>
-      <h1
-        className="text-3xl font-bold text-white mb-2"
-        style={{ fontFamily: "'Cinzel', serif" }}
-      >
-        Dashboard
-      </h1>
-      <p className="text-gray-500 text-sm mb-8">
-        Welcome back, Admin — here's today's overview.
-      </p>
+  const summary = useMemo(() => {
+    const totalBookings = bookings.length;
+    let totalRevenue = 0;
+    for (let i = 0; i < bookings.length; i++) totalRevenue += bookings[i].totalPaid || 0;
+    const totalUsers = users.length;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {STATS.map(({ key, label, icon: Icon, color, bg, border }) => (
-          <div
-            key={key}
-            className={card.wrapper}
-            style={{
-              background: `linear-gradient(135deg, ${bg} 0%, rgba(15,15,25,0.9) 100%)`,
-              borderColor: border,
-            }}
-          >
-            <div className={card.icon} style={{ background: bg }}>
-              <Icon size={24} style={{ color }} />
-            </div>
+    const map = {};
+    const movieTitleMap = {};
+    for (let i = 0; i < movies.length; i++) {
+      if (movies[i].id) movieTitleMap[movies[i].id] = movies[i].title;
+    }
+
+    for (let i = 0; i < bookings.length; i++) {
+      const bk = bookings[i];
+      const key = bk.movieId || bk.movieTitle || `unknown-${i}`;
+      const title = movieTitleMap[bk.movieId] || bk.movieTitle || "Unknown";
+      if (!map[key]) map[key] = { id: key, title, bookings: 0, earnings: 0 };
+      map[key].bookings += 1;
+      map[key].earnings += bk.totalPaid || 0;
+    }
+
+    const movieStats = Object.values(map).sort((a, b) => b.bookings - a.bookings);
+    return { totalBookings, totalRevenue, totalUsers, movieStats };
+  }, [movies, bookings, users]);
+
+  if(loading) return <div className="p-6 text-white text-center">Loading Dashboard...</div>;
+
+  return (
+    <div className="p-6 text-white">
+      <h1 className="text-3xl font-bold mb-8" style={{ fontFamily: "'Cinzel', serif" }}>Admin Dashboard</h1>
+      
+      {error && (
+        <div className="mb-8 p-4 bg-red-900/40 border border-red-500 rounded-xl flex items-center gap-3 text-red-200">
+          <AlertTriangle className="text-red-500" />
+          <p>{error}</p>
+        </div>
+      )}
+      
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between shadow-lg shadow-black/20">
             <div>
-              <div className={card.label}>{label}</div>
-              <div className={card.value} style={{ color }}>
-                {loading ? (
-                  <span className="animate-pulse text-gray-600">…</span>
-                ) : (
-                  stats[key]
-                )}
-              </div>
+               <div className="text-gray-400 text-sm font-semibold uppercase tracking-widest mb-1">Total Revenue</div>
+               <div className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">{fmtINR(summary.totalRevenue)}</div>
             </div>
-          </div>
-        ))}
+            <div className="p-4 bg-red-600/10 rounded-full text-red-500"><IndianRupee size={28}/></div>
+         </div>
+         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between shadow-lg shadow-black/20">
+            <div>
+               <div className="text-gray-400 text-sm font-semibold uppercase tracking-widest mb-1">Bookings</div>
+               <div className="text-3xl font-bold">{summary.totalBookings}</div>
+            </div>
+            <div className="p-4 bg-blue-600/10 rounded-full text-blue-500"><BookOpen size={28}/></div>
+         </div>
+         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between shadow-lg shadow-black/20">
+            <div>
+               <div className="text-gray-400 text-sm font-semibold uppercase tracking-widest mb-1">Registered Users</div>
+               <div className="text-3xl font-bold">{summary.totalUsers}</div>
+            </div>
+            <div className="p-4 bg-emerald-600/10 rounded-full text-emerald-500"><Users size={28}/></div>
+         </div>
       </div>
 
-      {/* Sub info */}
-      <div className="mt-10 rounded-2xl border p-6"
-        style={{ borderColor: "rgba(220,38,38,0.15)", background: "rgba(15,15,25,0.8)" }}>
-        <h2 className="text-lg font-semibold text-white mb-2"
-          style={{ fontFamily: "'Cinzel', serif" }}>Quick Links</h2>
-        <p className="text-gray-400 text-sm">
-          Use the sidebar to manage your movie inventory, view all bookings, or track revenue. All data is live from your MongoDB Atlas cluster.
-        </p>
+      {/* Aggregate Stats */}
+      <h2 className="text-xl font-bold mb-4">Movie Performance</h2>
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden overflow-x-auto">
+         <table className="w-full text-left border-collapse">
+            <thead>
+               <tr className="bg-black/40 text-gray-400 text-xs uppercase tracking-wider">
+                  <th className="p-4 rounded-tl-xl">Movie</th>
+                  <th className="p-4">Bookings</th>
+                  <th className="p-4">Total Earnings</th>
+                  <th className="p-4 rounded-tr-xl">Avg / Booking</th>
+               </tr>
+            </thead>
+            <tbody>
+               {summary.movieStats.map((m, i) => {
+                 const avg = m.bookings ? Math.round(m.earnings / m.bookings) : 0;
+                 return (
+                   <tr key={m.id || i} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                     <td className="p-4 font-semibold text-white/90">{m.title}</td>
+                     <td className="p-4">{m.bookings}</td>
+                     <td className="p-4 font-mono text-green-400">{fmtINR(m.earnings)}</td>
+                     <td className="p-4 text-gray-300">{fmtINR(avg)}</td>
+                   </tr>
+                 );
+               })}
+               {summary.movieStats.length === 0 && (
+                  <tr><td colSpan="4" className="p-8 text-center text-gray-500">No active bookings found.</td></tr>
+               )}
+            </tbody>
+         </table>
       </div>
     </div>
   );

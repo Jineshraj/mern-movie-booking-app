@@ -1,10 +1,32 @@
 import { Link } from "react-router-dom";
 import { moviesStyles } from "../assets/dummyStyles";
-import movies from "../assets/dummymoviedata";
+import api, { getApiBaseUrl } from "../utils/api";
 import { Tickets } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Movies = () => {
-  const visibleMovies = movies.slice(0, 6);
+  const [movies, setMovies] = useState([]);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const { data } = await api.get('/movies');
+        // Filter out the specific featured movies mapping to the legacy Home layout
+        const featured = data.filter(m => m.type === "featured" || m.title === "Fighter").slice(0, 6);
+        setMovies(featured.map(m => ({
+          id: m._id,
+          title: m.title,
+          category: (m.category && m.category[0]) || "action",
+          img: `${getApiBaseUrl()}/${m.posterUrl}`,
+        })));
+      } catch (err) {
+        console.error("Failed to load featured movies", err);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
+  const visibleMovies = movies;
 
   return (
     <section className={moviesStyles.container}>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -12,12 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { movieDetailHStyles } from "../assets/dummyStyles";
-import MOVIES_MAIN from "../assets/dummymdata";         // IDs 7–48, uses movie.image
-import MOVIES_FEATURED from "../assets/dummymoviedata"; // IDs 1–6,  uses movie.img
-
-// Normalise img → image so both sources work uniformly in JSX
-const MOVIES_FEATURED_NORMALISED = MOVIES_FEATURED.map((m) => ({ ...m, image: m.img }));
-const ALL_MOVIES = [...MOVIES_FEATURED_NORMALISED, ...MOVIES_MAIN];
+import api, { getApiBaseUrl } from "../utils/api";
 
 // ── Constants (repo snippet) ───────────────────────────────────────────────────
 const ROWS = [
@@ -86,14 +81,23 @@ const FallbackAvatar = ({ className = "w-12 h-12" }) => (
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function MovieDetailsPage() {
   const { id } = useParams();
-  const movieId = Number(id);
   const navigate = useNavigate();
 
-  // Lookup across both data sources (IDs 1–6 and 7–48)
-  const movie = useMemo(
-    () => ALL_MOVIES.find((m) => m.id === movieId),
-    [movieId]
-  );
+  const [movie, setMovie] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/movies/${id}`)
+      .then(res => {
+         setMovie(res.data);
+      })
+      .catch(err => {
+         console.error(err);
+      })
+      .finally(() => {
+         setLoading(false);
+      });
+  }, [id]);
 
   // Trailer state
   const [showTrailer, setShowTrailer] = useState(false);
@@ -104,86 +108,52 @@ export default function MovieDetailsPage() {
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedTime, setSelectedTime] = useState(null);
 
-  // ── Repo snippet: showtimeDays useMemo (IST-grouped) ──────────────────────
+  // ── Runtime Mapping: showtimeDays useMemo (Mongoose format) ──────────────────────
   const showtimeDays = useMemo(() => {
-    if (!movie) return [];
-    const TZ = "Asia/Kolkata";
+    if (!movie || !movie.showtimes) return [];
+    
     const slotsByDate = {};
-
-    (movie.slots || []).forEach((raw) => {
-      let iso = null;
-      let audi = "Audi 1";
-
-      if (!raw) return;
-      if (typeof raw === "string") {
-        iso = raw;
-        audi = "Audi 1";
-      } else if (typeof raw === "object" && raw.time) {
-        iso = raw.time;
-        audi = raw.audi ?? "Audi 1";
-      } else {
-        return;
-      }
-
-      const d = new Date(iso);
-      if (Number.isNaN(d.getTime())) return;
-
-      const dateKey = formatDateKey(d, TZ);
-      if (!slotsByDate[dateKey]) slotsByDate[dateKey] = [];
-      slotsByDate[dateKey].push({ iso, audi });
+    movie.showtimes.forEach(slot => {
+        if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
+        slotsByDate[slot.date].push(slot);
     });
 
-    return Object.keys(slotsByDate)
-      .sort()
-      .map((key) => {
+    return Object.keys(slotsByDate).sort().map(key => {
         const [yy, mm, dd] = key.split("-").map(Number);
         const asDate = new Date(Date.UTC(yy, mm - 1, dd));
         const shortDay = new Intl.DateTimeFormat("en-US", {
-          weekday: "short",
-          timeZone: TZ,
+          weekday: "short", timeZone: "UTC"
         }).format(asDate);
         const dateStr = new Intl.DateTimeFormat("en-US", {
-          month: "short",
-          day: "numeric",
-          timeZone: TZ,
+          month: "short", day: "numeric", timeZone: "UTC"
         }).format(asDate);
-        const showtimes = (slotsByDate[key] || [])
-          .map(({ iso, audi }) => {
-            const d = new Date(iso);
-            if (Number.isNaN(d.getTime())) return null;
-            return {
-              time: formatTimeInTZ(iso, TZ),
-              datetime: iso,
-              timestamp: d.getTime(),
-              audi,
-            };
-          })
-          .filter(Boolean)
-          .sort((a, b) => a.timestamp - b.timestamp)
-          .map(({ time, datetime, audi }) => ({ time, datetime, audi }));
+
+        const showtimes = slotsByDate[key].map(slot => {
+             // Rebuild a JS valid Date simulating local ISO layouts
+             const synDate = new Date(`${slot.date} ${slot.time} ${slot.ampm}`);
+             const displayTime = `${slot.time} ${slot.ampm}`;
+             return {
+                 time: displayTime,
+                 datetime: !isNaN(synDate.getTime()) ? synDate.toISOString() : slot.date, 
+                 audi: movie.auditorium || "Audi 1",
+                 bookedCount: slot.bookedSeats?.length || 0
+             };
+        });
+        
         return { date: key, shortDay, dateStr, showtimes };
-      });
+    });
   }, [movie]);
 
   // ── Repo snippet: getBookedCountFor with audi + legacy fallback ────────────
   const getBookedCountFor = (datetime, audi = "Audi 1") => {
-    try {
-      const keyWithAudi = `bookings_${movie.id}_${datetime}_${audi}`;
-      const rawWith = localStorage.getItem(keyWithAudi);
-      if (rawWith) {
-        const arr = JSON.parse(rawWith);
-        if (Array.isArray(arr)) return arr.length;
-      }
-      const legacyKey = `bookings_${movie.id}_${datetime}`;
-      const rawLegacy = localStorage.getItem(legacyKey);
-      if (rawLegacy) {
-        const arrLegacy = JSON.parse(rawLegacy);
-        if (Array.isArray(arrLegacy)) return arrLegacy.length;
-      }
-      return 0;
-    } catch {
-      return 0;
-    }
+    // Rely exclusively on API fetched payload hooks! Local storage legacy simulations wiped cleanly
+    if (!movie || !movie.showtimes) return 0;
+    const allCount = showtimeDays.reduce((acc, curr) => {
+         const slot = curr.showtimes.find(s => s.datetime === datetime);
+         if (slot) return slot.bookedCount;
+         return acc;
+    }, 0);
+    return allCount;
   };
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -213,10 +183,14 @@ export default function MovieDetailsPage() {
       toast.error("Please select a showtime first.");
       return;
     }
-    navigate(`/seat/${movie.id}/${encodeURIComponent(selectedTime)}`);
+    navigate(`/seat/${movie._id}/${encodeURIComponent(selectedTime)}`);
   };
 
   // ── Not found ─────────────────────────────────────────────────────────────
+  if (loading) {
+     return <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">Loading movie details...</div>;
+  }
+
   if (!movie) {
     return (
       <div className={movieDetailHStyles.notFoundContainer}>
@@ -309,11 +283,10 @@ export default function MovieDetailsPage() {
                 className={movieDetailHStyles.posterImageContainer}
                 style={{ maxWidth: "320px" }}
               >
-                {/* Rule 2 — use movie.image (dummymdata field) */}
                 <img
-                  src={movie.image}
+                  src={`${getApiBaseUrl()}/${movie.posterUrl}`}
                   alt={movie.title}
-                  loading="lazy"
+                  loading="eager"
                   className={movieDetailHStyles.posterImage}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
