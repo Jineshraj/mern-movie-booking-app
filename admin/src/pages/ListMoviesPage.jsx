@@ -17,14 +17,18 @@ function getImageUrl(maybe) {
   const cleaned = String(maybe).replace(/^uploads\//, "");
   return `${API_BASE}/uploads/${cleaned}`;
 }
+let adminMoviesCache = null;
 
 export default function ListMoviesPage() {
+  const [movies, setMovies] = useState(adminMoviesCache || []);
+  const [loading, setLoading] = useState(!adminMoviesCache);
   const fetchMovies = async () => {
     try {
-      setLoading(true);
+      if (!adminMoviesCache) setLoading(true);
       const res = await api.get('/movies');
       const mapped = res.data.map(m => ({...m, type: m.type || (m.categories && m.categories.includes('latestTrailers') ? 'latestTrailers' : 'normal')}));
-      setMovies(mapped);
+      adminMoviesCache = mapped;
+      setMovies(adminMoviesCache);
       setError(null);
     } catch (e) {
       console.error(e);
@@ -45,18 +49,21 @@ export default function ListMoviesPage() {
     try {
       await api.delete(`/movies/${id}`);
       toast.success('Movie deleted');
-      fetchMovies();
+      if (adminMoviesCache) {
+        adminMoviesCache = adminMoviesCache.filter(m => m._id !== id && m.id !== id);
+        setMovies([...adminMoviesCache]);
+      } else {
+        fetchMovies();
+      }
       if(selected && (selected._id === id || selected.id === id)) setSelected(null);
     } catch (e) {
       toast.error('Deletion failed');
     }
   };
 
-  const [movies, setMovies] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
 
@@ -325,12 +332,18 @@ function Card({ item, onOpen, onDelete }) {
     return colors[type] || "from-gray-500 to-gray-600";
   };
 
-  const posterOrThumb =
+  let posterOrThumb =
     item.poster ||
     item.thumbnail ||
     item.image ||
     item.latestTrailer?.thumbnail ||
     null;
+
+  if (posterOrThumb && !posterOrThumb.startsWith('http')) {
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+    const cleaned = posterOrThumb.startsWith('uploads/') ? posterOrThumb : `uploads/${posterOrThumb}`;
+    posterOrThumb = `${API_BASE}/${cleaned}`;
+  }
 
   return (
     <div

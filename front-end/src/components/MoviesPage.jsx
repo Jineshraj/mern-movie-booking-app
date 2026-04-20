@@ -3,16 +3,19 @@ import api, { getApiBaseUrl } from "../utils/api";
 import { moviesPageStyles } from "../assets/dummyStyles";
 import { Link } from "react-router-dom";
 
+let frontendMoviesCache = null;
+
 const MoviesPage = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [showAll, setShowAll] = useState(false);
   
-  const [movies, setMovies] = useState([]); 
-  const [loading, setLoading] = useState(true);
+  const [movies, setMovies] = useState(frontendMoviesCache || []); 
+  const [loading, setLoading] = useState(!frontendMoviesCache);
   
   useEffect(() => {
     const fetchAndMergeMovies = async () => {
       try {
+        if (!frontendMoviesCache) setLoading(true);
         const { data } = await api.get('/movies');
         
         // Filter OUT featured layout items, mapping exclusively remaining components
@@ -29,7 +32,8 @@ const MoviesPage = () => {
           time: (m.showtimes || []).map(s => s.time) || ["2:30 PM", "7:00 PM"]
         }));
         
-        setMovies(formattedLiveMovies);
+        frontendMoviesCache = formattedLiveMovies;
+        setMovies(frontendMoviesCache);
       } catch (err) {
         console.error("Failed to load live movies", err);
       } finally {
