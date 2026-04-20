@@ -4,8 +4,8 @@ import { X } from "lucide-react";
 export const namedUploaderStyles = {
   container: "bg-[#111] border border-white/10 p-4 rounded-xl",
   title: "text-sm text-white font-bold tracking-widest uppercase mb-4",
-  grid: "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
-  item: "bg-[#161616] border border-white/5 rounded-xl p-3 relative group transition-colors hover:border-white/20",
+  grid: "flex items-stretch overflow-x-auto gap-4 custom-scrollbar pb-4",
+  item: "flex-shrink-0 w-36 bg-[#161616] border border-white/5 rounded-xl p-3 relative group transition-colors hover:border-white/20",
   preview: "w-full h-24 object-cover rounded-lg mb-3 shadow-lg shadow-black",
   placeholder: "w-full h-24 bg-white/5 rounded-lg mb-3 flex items-center justify-center border border-white/10",
   placeholderIcon: "text-gray-600 font-bold text-2xl",
@@ -13,7 +13,7 @@ export const namedUploaderStyles = {
   input: "w-full bg-[#111] border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors",
   removeButton: "absolute -top-2 -right-2 bg-red-600 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10",
   removeIcon: "w-3 h-3",
-  uploadLabel: "flex items-center justify-center p-3 border-2 border-dashed border-white/10 rounded-lg text-gray-500 flex-col gap-2 cursor-pointer hover:bg-white/5 hover:border-red-500/30 transition-all",
+  uploadLabel: "flex-shrink-0 w-36 flex items-center justify-center p-3 border-2 border-dashed border-white/10 rounded-lg text-gray-500 flex-col gap-2 cursor-pointer hover:bg-white/5 hover:border-red-500/30 transition-all",
   uploadText: "text-xs font-semibold uppercase",
   uploadInput: "hidden",
 };
@@ -60,11 +60,6 @@ export function NamedUploader({ title, onFiles, items, remove, updateName, updat
             </button>
           </div>
         ))}
-        <label className={namedUploaderStyles.uploadLabel}>
-          {icon}
-          <span className={namedUploaderStyles.uploadText}>Upload Files</span>
-          <input type="file" multiple accept="image/*" onChange={onFiles} className={namedUploaderStyles.uploadInput} />
-        </label>
         {onAddEmpty && (
           <button type="button" onClick={onAddEmpty} className={namedUploaderStyles.uploadLabel}>
             <span className={namedUploaderStyles.placeholderIcon}>+</span>
@@ -127,11 +122,6 @@ export function Uploader({ title, onFiles, items, remove, updateMeta, icon, onAd
             </button>
           </div>
         ))}
-        <label className={namedUploaderStyles.uploadLabel}>
-          {icon}
-          <span className={namedUploaderStyles.uploadText}>Upload Files</span>
-          <input type="file" multiple accept="image/*" onChange={onFiles} className={namedUploaderStyles.uploadInput} />
-        </label>
         {onAddEmpty && (
           <button type="button" onClick={onAddEmpty} className={namedUploaderStyles.uploadLabel}>
             <span className={namedUploaderStyles.placeholderIcon}>+</span>
