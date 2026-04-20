@@ -284,7 +284,12 @@ export default function MovieDetailsPage() {
                 style={{ maxWidth: "320px" }}
               >
                 <img
-                  src={`${getApiBaseUrl()}/${movie.posterUrl}`}
+                  src={(() => {
+                    const raw = movie.posterUrl || "";
+                    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+                    const cleaned = raw.startsWith("uploads/") ? raw : `uploads/${raw}`;
+                    return `${getApiBaseUrl()}/${cleaned}`;
+                  })()}
                   alt={movie.title}
                   loading="eager"
                   className={movieDetailHStyles.posterImage}
@@ -425,21 +430,24 @@ export default function MovieDetailsPage() {
                   movie.cast.map((c, idx) => (
                     <div key={idx} className={movieDetailHStyles.castMember}>
                       <div className={movieDetailHStyles.castImageContainer}>
-                        {c.img ? (
-                          <img
-                            src={c.img}
-                            alt={c.name}
-                            loading="lazy"
-                            className={movieDetailHStyles.castImage}
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src =
-                                "https://via.placeholder.com/80?text=A";
-                            }}
-                          />
-                        ) : (
-                          <FallbackAvatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto" />
-                        )}
+                        {(() => {
+                          const castImgRaw = c.avatarUrl || c.img || c.image || c.file || c.url || null;
+                          if (castImgRaw) {
+                            const castImgSrc = castImgRaw.startsWith("http")
+                              ? castImgRaw
+                              : `${getApiBaseUrl()}/uploads/${castImgRaw.replace(/^\/?(uploads\/)?/, "")}`;
+                            return (
+                              <img
+                                src={castImgSrc}
+                                alt={c.name}
+                                loading="lazy"
+                                className={movieDetailHStyles.castImage}
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://via.placeholder.com/80?text=A"; }}
+                              />
+                            );
+                          }
+                          return <FallbackAvatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto" />;
+                        })()}
                       </div>
                       <div className={movieDetailHStyles.castName}>{c.name}</div>
                       <div className={movieDetailHStyles.castRole}>{c.role}</div>
@@ -463,7 +471,7 @@ export default function MovieDetailsPage() {
           >
             Story
           </h2>
-          <p className={movieDetailHStyles.storyText}>{movie.synopsis}</p>
+          <p className={movieDetailHStyles.storyText}>{movie.description || movie.story || movie.synopsis || "No story available."}</p>
         </div>
 
         {/* Director & Producer — full width below story */}
@@ -476,7 +484,9 @@ export default function MovieDetailsPage() {
             </div>
             <div className={movieDetailHStyles.crewContent}>
               {(() => {
-                const directors = Array.isArray(movie.director)
+                const directors = Array.isArray(movie.directors)
+                  ? movie.directors
+                  : Array.isArray(movie.director)
                   ? movie.director
                   : movie.director
                   ? [movie.director]
@@ -486,26 +496,15 @@ export default function MovieDetailsPage() {
                     {directors.length ? (
                       directors.slice(0, 2).map((d, i) => (
                         <div key={i} className="flex flex-col items-center">
-                          {d?.img ? (
-                            <img
-                              src={d.img}
-                              alt={d.name || `Director ${i + 1}`}
-                              loading="lazy"
-                              className={movieDetailHStyles.crewImage}
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src =
-                                  "https://via.placeholder.com/96?text=D";
-                              }}
-                            />
-                          ) : (
-                            <div className={movieDetailHStyles.fallbackAvatar}>
-                              ?
-                            </div>
-                          )}
-                          <div className={movieDetailHStyles.crewName}>
-                            {d?.name ?? "N/A"}
-                          </div>
+                          {(() => {
+                            const raw = d?.avatarUrl || d?.img || d?.image || null;
+                            if (raw) {
+                              const src = raw.startsWith("http") ? raw : `${getApiBaseUrl()}/uploads/${raw.replace(/^\/?(uploads\/)?/, "")}`;
+                              return <img src={src} alt={d.name || `Director ${i+1}`} loading="lazy" className={movieDetailHStyles.crewImage} onError={(e) => { e.currentTarget.onerror=null; e.currentTarget.src="https://via.placeholder.com/96?text=D"; }} />;
+                            }
+                            return <div className={movieDetailHStyles.fallbackAvatar}>?</div>;
+                          })()}
+                          <div className={movieDetailHStyles.crewName}>{d?.name ?? "N/A"}</div>
                         </div>
                       ))
                     ) : (
@@ -527,23 +526,17 @@ export default function MovieDetailsPage() {
               <h3 style={{ fontFamily: "'Cinzel', serif" }}>Producer</h3>
             </div>
             <div className={movieDetailHStyles.crewContent}>
-              {movie.producer?.img ? (
-                <img
-                  src={movie.producer.img}
-                  alt={movie.producer.name}
-                  loading="lazy"
-                  className={movieDetailHStyles.crewImage}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src =
-                      "https://via.placeholder.com/96?text=P";
-                  }}
-                />
-              ) : (
-                <FallbackAvatar className="w-20 h-20 sm:w-24 sm:h-24 mb-3 sm:mb-4" />
-              )}
+              {(() => {
+                const producer = movie.producers?.[0] || movie.producer || null;
+                const raw = producer?.avatarUrl || producer?.img || producer?.image || null;
+                if (raw) {
+                  const src = raw.startsWith("http") ? raw : `${getApiBaseUrl()}/uploads/${raw.replace(/^\/?(uploads\/)?/, "")}`;
+                  return <img src={src} alt={producer.name} loading="lazy" className={movieDetailHStyles.crewImage} onError={(e) => { e.currentTarget.onerror=null; e.currentTarget.src="https://via.placeholder.com/96?text=P"; }} />;
+                }
+                return <FallbackAvatar className="w-20 h-20 sm:w-24 sm:h-24 mb-3 sm:mb-4" />;
+              })()}
               <div className={movieDetailHStyles.crewName}>
-                {movie.producer?.name ?? "N/A"}
+                {(movie.producers?.[0] || movie.producer)?.name ?? "N/A"}
               </div>
             </div>
           </div>

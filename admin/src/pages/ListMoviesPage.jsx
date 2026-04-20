@@ -170,7 +170,7 @@ export default function ListMoviesPage() {
       arr = arr.filter(m => String(m.title||m.movieName||m.displayTitle||'').toLowerCase().includes(search.toLowerCase()));
     }
     return arr.map(normalizeMovie);
-  }, [movies]);
+  }, [movies, filterType, search]);
 
 
   return (
